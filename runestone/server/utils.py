@@ -59,6 +59,13 @@ def _build_runestone_book(config, course, click=click):
         print(e)
         return False
 
+    # If the click object has a worker attribute then we are running in a worker
+    # process and **know** we are making a build for a runestone server. In that
+    # case we need to make sure that the dynamic_pages flag is set to True in
+    # pavement.py
+    if hasattr(click, "worker") and paver_vars["dynamic_pages"] != True:
+        click.echo("dynamic_pages must be set to True in pavement.py")
+        return False
     if paver_vars["project_name"] != course:
         click.echo(
             "Error: {} and {} do not match.  Your course name needs to match the project_name in pavement.py".format(
@@ -130,7 +137,7 @@ def _build_ptx_book(config, gen, manifest, course, click=click):
             if res != 0:
                 click.echo("Failed to build")
             # build the book
-        click.echo("Building for Runestone")
+        click.echo("Building for Runestone Academy")
         res = subprocess.call("pretext build runestone", shell=True)
         if res != 0:
             click.echo("Building failed")
@@ -181,6 +188,7 @@ def process_manifest(cname, mpath, click=click):
         raise IOError(
             f"You must provide a valid path to a manifest file: {mpath} does not exist."
         )
+    return True
 
 
 def check_project_ptx(click=click):
@@ -354,9 +362,13 @@ def populate_static(config, mpath: Path, course: str, click=click):
         current_version = tree.find("./version").text
     else:
         sdir.mkdir(mode=0o775, exist_ok=True)  # NB mode must be in Octal!
-    tree = ET.parse(mpath)
-    el = tree.find("./runestone-services[@version]")
-    version = el.attrib["version"].strip()
+    if mpath.exists():
+        tree = ET.parse(mpath)
+        el = tree.find("./runestone-services[@version]")
+        version = el.attrib["version"].strip()
+    else:
+        click.echo("Error: missing runestone-manifest.xml file")
+        return False
     # Do not download if the versions already match.
     if version != current_version:
         click.echo(f"Fetching {version} files to {sdir} ")

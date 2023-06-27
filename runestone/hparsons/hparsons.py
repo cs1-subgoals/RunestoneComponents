@@ -39,7 +39,7 @@ def setup(app):
 TEMPLATE_START = """
 <div class="runestone">
 <div data-component="hparsons" id=%(divid)s data-question_label="%(question_label)s" class="alert alert-warning hparsons_section">
-<div class="hp_question col-md-12">
+<div class="hp_question">
 """
 
 TEMPLATE_END = """
@@ -102,10 +102,16 @@ class HParsonsDirective(RunestoneIdDirective):
         Here is the problem description. It must ends with the tildes.
         Make sure you use the correct delimitier for each section below.
         ~~~~
+        --hiddenprefix--
+        // code that is for scaffolding the execution (e.g. initializing database)
         --blocks--
         block 1
         block 2
         block 3
+        --hiddensuffix--
+        // code that is for scaffolding unittest/execution (e.g. adding query for database)
+        // most of the time the hiddensuffix is just "select * from table" to
+        //      get all entries from the table to test the update or other operations.
         --unittest--
         assert 1,1 == world
         assert 0,1 == hello

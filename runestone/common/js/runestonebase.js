@@ -98,7 +98,7 @@ export default class RunestoneBase {
         eventInfo.course_name = eBookConfig.course;
         eventInfo.clientLoginStatus = eBookConfig.isLoggedIn;
         eventInfo.timezoneoffset = new Date().getTimezoneOffset() / 60;
-        if (this.percent) {
+        if (typeof(this.percent) === "number") {
             eventInfo.percent = this.percent;
         }
         if (
@@ -146,7 +146,7 @@ export default class RunestoneBase {
             }
         );
         try {
-            let response = await fetch(request);
+            var response = await fetch(request);
             if (!response.ok) {
                 if (response.status === 422) {
                     // Get details about why this is unprocesable.
@@ -172,11 +172,12 @@ export default class RunestoneBase {
             if (eBookConfig.loginRequired) {
                 alert(`Error: Your action was not saved!
                     The error was ${e}
+                    Status Code: ${response.status}
                     Detail: ${detail}.
                     Please report this error!`);
             }
             // send a request to save this error
-            console.log(`Error: ${e} Detail: ${detail}`);
+            console.log(`Error: ${e} Detail: ${detail} Status Code: ${response.status}`);
         }
         return post_return;
     }
@@ -464,13 +465,34 @@ export default class RunestoneBase {
             // should wait until defaultPageReady is defined
             // If defaultPageReady is not defined then just enqueue the components.
             // Once defaultPageReady is defined
+            // the window.runestoneMathReady promise will be fulfilled when the
+            // initial typesetting is complete.
             if (MathJax.typesetPromise) {
-                return this.mjresolver(this.aQueue.enqueue(component))
+                if (typeof(window.runestoneMathReady) !== "undefined") {
+                    return window.runestoneMathReady.then(
+                        () => this.mjresolver(this.aQueue.enqueue(component))
+                    )
+                } else {
+                    return this.mjresolver(this.aQueue.enqueue(component))
+                }
             } else {
                 console.log(`Waiting on MathJax!! ${MathJax.typesetPromise}`);
                 setTimeout(() => this.queueMathJax(component), 200);
                 console.log(`Returning mjready promise: ${this.mjReady}`)
                 return this.mjReady;
+            }
+        }
+    }
+
+    decorateStatus() {
+        let rsDiv = $(this.containerDiv).closest("div.runestone")[0];
+        if (this.correct) {
+            rsDiv.classList.add("isCorrect");
+        } else {
+            if (this.correct === null) {
+                rsDiv.classList.add("notAnswered");
+            } else {
+                rsDiv.classList.add("isInCorrect");
             }
         }
     }
